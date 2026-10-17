@@ -1,0 +1,83 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [created]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build release (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin: jinxiaocun
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: jinxiaocun.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # windows 本地方案(.cargo/config.toml)指向 zcc.exe / rust-lld，
+      # 在 CI 的 runner 上不存在，会直接导致编译失败，故移除，用平台默认工具链
+      - name: Remove windows-local cargo config
+        shell: bash
+        run: rm -f .cargo/config.toml
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: .
+
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Smoke test (Linux)
+        if: runner.os == 'Linux'
+        run: ./target/${{ matrix.target }}/release/${{ matrix.bin }} --help || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.bin }}-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.bin }}
+
+  publish:
+    name: Attach binaries to GitHub Release
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Upload assets to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          for f in dist/*; do
+            echo "==> uploading $(basename "$f")"
+            gh release upload "${{ github.event.release.tag_name }}" "$f" \
+              --repo "${{ github.repository }}" --clobber
+          done

@@ -1,0 +1,45 @@
+# 本机（Windows）开发用的构建配置，仅用于本地验证，不影响服务器部署。
+#
+# 服务器上直接 `cargo build --release` 即可，Ubuntu 自带 gcc，不需要本文件。
+#
+# ── 为什么需要这份配置 ──────────────────────────────────────────────
+# 本机没有 Visual Studio Build Tools（含 Windows SDK 的 .lib），也没有 MinGW/GCC。
+# 可行组合：
+#   - host 侧（build script / proc-macro 编译成 .exe）
+#       → Rust 自带的 rust-lld，linker-flavor = ld.lld
+#       → 需要一个 dlltool；工具链自带的那个依赖缺失的 as.exe，
+#         故改用 C:/Users/Administrator/bin/dlltool.exe（自研垫片，转发给 lld-link）
+#   - 目标侧（x86_64-unknown-linux-gnu）
+#       → zig cc（pip install ziglang），并经 C:/Users/Administrator/bin/zcc.exe
+#         转发（把 Rust 三元组翻译成 zig 认识的目标名）
+#   - C 依赖（libsqlite3-sys 内嵌的 sqlite3.c）
+#       → 同一个 zcc.exe，用作 CC
+#
+# ── 前置准备 ───────────────────────────────────────────────────────
+# 1. 工具链与标准库：
+#      rustup toolchain install stable-x86_64-pc-windows-gnu
+#      rustup target add --toolchain stable-x86_64-pc-windows-gnu \
+#          x86_64-unknown-linux-gnu
+# 2. zig：pip install ziglang
+# 3. dlltool / zcc 垫片放到 PATH：C:/Users/Administrator/bin
+#
+# ── 一个绕不开的坑 ─────────────────────────────────────────────────
+# cc-rs 找 C 编译器时只认「带连字符的 CC_<target>」或「无前缀的 CC」。
+# 而 Git Bash 无法 export 含连字符的变量名（会在第一个连字符处截断），
+# 所以必须用下面的 [env] 段由 cargo 直接注入，绕开 shell。
+#
+# 构建命令：
+#   set PATH=C:/Users/Administrator/bin;%PATH%
+#   set RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu
+#   cargo build --target x86_64-unknown-linux-gnu --release
+
+[env]
+CC = { value = "C:/Users/Administrator/bin/zcc.exe cc", force = true }
+AR = { value = "C:/Users/Administrator/bin/zcc.exe ar", force = true }
+
+[target.x86_64-pc-windows-gnu]
+linker = "rust-lld"
+rustflags = ["-Clinker-flavor=ld.lld"]
+
+[target.x86_64-unknown-linux-gnu]
+linker = "C:/Users/Administrator/bin/zcc.exe cc"

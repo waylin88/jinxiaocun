@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>进销存</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<!-- 网络状态条 -->
+<div id="netbar" class="netbar hidden"></div>
+
+<!-- 登录页 -->
+<section id="page-login" class="page">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <svg viewBox="0 0 48 48" width="56" height="56" aria-hidden="true">
+        <rect x="6" y="20" width="36" height="22" rx="3" fill="#2f6fed"/>
+        <path d="M16 20v-6a8 8 0 0 1 16 0v6" fill="none" stroke="#2f6fed" stroke-width="3.5"/>
+        <rect x="21" y="27" width="6" height="9" rx="1.5" fill="#fff"/>
+      </svg>
+    </div>
+    <h1 class="login-title">进销存</h1>
+    <p class="login-sub">电商批发 · 仓库点数管理</p>
+    <form id="login-form" class="login-form" autocomplete="on">
+      <label class="field">
+        <span class="field-label">账号</span>
+        <input id="login-user" name="username" type="text" inputmode="text"
+               autocomplete="username" autocapitalize="off" autocorrect="off" required>
+      </label>
+      <label class="field">
+        <span class="field-label">密码</span>
+        <input id="login-pass" name="password" type="password"
+               autocomplete="current-password" required>
+      </label>
+      <div id="login-error" class="form-error hidden"></div>
+      <button id="login-btn" class="btn btn-primary btn-block" type="submit">登 录</button>
+    </form>
+  </div>
+</section>
+
+<!-- 主应用 -->
+<section id="page-app" class="page hidden">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <span id="page-title" class="topbar-title">工作台</span>
+    </div>
+    <div class="topbar-right">
+      <span id="pending-badge" class="badge hidden">0 待同步</span>
+      <button id="sync-btn" class="icon-btn" title="立即同步">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-8.5-6"/>
+          <path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 8.5 6"/>
+          <path d="M21 3v5h-5"/><path d="M3 21v-5h5"/>
+        </svg>
+      </button>
+      <button id="menu-btn" class="icon-btn" title="菜单">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="view" class="view"></main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-tab="dash">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+      <span>工作台</span>
+    </button>
+    <button class="tab" data-tab="in">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg>
+      <span>入库</span>
+    </button>
+    <button class="tab" data-tab="out">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M4 4h16"/></svg>
+      <span>出库</span>
+    </button>
+    <button class="tab" data-tab="stock">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span>库存</span>
+    </button>
+  </nav>
+</section>
+
+<!-- 底部弹出菜单 -->
+<div id="sheet" class="sheet hidden">
+  <div class="sheet-mask" data-close-sheet></div>
+  <div class="sheet-body">
+    <div class="sheet-grip"></div>
+    <div class="sheet-user">
+      <span id="sheet-name">—</span>
+      <span id="sheet-role" class="tag">—</span>
+    </div>
+    <button class="sheet-item" data-go="products">型号管理</button>
+    <button class="sheet-item" data-go="inbound">入库单列表</button>
+    <button class="sheet-item" data-go="outbound">出库单列表</button>
+    <button class="sheet-item" data-go="pending">待同步队列</button>
+    <button class="sheet-item" data-go="password">修改密码</button>
+    <button class="sheet-item" data-go="logout" class="danger">退出登录</button>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>
