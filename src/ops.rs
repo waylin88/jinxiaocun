@@ -273,7 +273,7 @@ pub async fn create_inbound(
     .bind(user_id)
     .bind(&ts)
     .bind(if req.post { Some(&ts) } else { None })
-    .execute(&mut tx)
+    .execute(&mut *tx)
     .await?;
 
     let order_id = r.last_insert_rowid();
@@ -291,7 +291,7 @@ pub async fn create_inbound(
         .bind(idx as i64)
         .bind(&ts)
         .bind(&ts)
-        .execute(&mut tx)
+        .execute(&mut *tx)
         .await?;
         let box_id = br.last_insert_rowid();
 
@@ -311,7 +311,7 @@ pub async fn create_inbound(
             .bind(pid)
             .bind(it.qty)
             .bind(it.remark.as_deref())
-            .execute(&mut tx)
+            .execute(&mut *tx)
             .await?;
 
             box_total += it.qty;
@@ -335,7 +335,7 @@ pub async fn create_inbound(
         sqlx::query("UPDATE inbound_boxes SET total_qty = ? WHERE id = ?")
             .bind(box_total)
             .bind(box_id)
-            .execute(&mut tx)
+            .execute(&mut *tx)
             .await?;
         order_total += box_total;
     }
@@ -344,7 +344,7 @@ pub async fn create_inbound(
         .bind(req.boxes.len() as i64)
         .bind(order_total)
         .bind(order_id)
-        .execute(&mut tx)
+        .execute(&mut *tx)
         .await?;
 
     if let Some(op_id) = req.op_id.as_deref().filter(|s| !s.is_empty()) {
@@ -479,7 +479,7 @@ pub async fn create_outbound(
     .bind(user_id)
     .bind(&ts)
     .bind(if req.post { Some(&ts) } else { None })
-    .execute(&mut tx)
+    .execute(&mut *tx)
     .await?;
 
     let order_id = r.last_insert_rowid();
@@ -496,7 +496,7 @@ pub async fn create_outbound(
         .bind(order_id)
         .bind(pid)
         .bind(it.qty)
-        .execute(&mut tx)
+        .execute(&mut *tx)
         .await?;
 
         total += it.qty;
@@ -520,7 +520,7 @@ pub async fn create_outbound(
     sqlx::query("UPDATE outbound_orders SET total_qty = ? WHERE id = ?")
         .bind(total)
         .bind(order_id)
-        .execute(&mut tx)
+        .execute(&mut *tx)
         .await?;
 
     if let Some(op_id) = req.op_id.as_deref().filter(|s| !s.is_empty()) {
